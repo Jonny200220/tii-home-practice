@@ -1,47 +1,32 @@
-import { Tabs } from "expo-router";
+import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React from "react";
+import { StyleSheet } from "react-native";
 
-import AntDesign from "@expo/vector-icons/AntDesign";
-import Feather from "@expo/vector-icons/Feather";
-import FontAwesome5 from "@expo/vector-icons/FontAwesome5";
+const RootLayout = () => {
+  const isLoggedIn = false;
+  const shouldCreateAccount = false;
 
-export default function RootLayout() {
   return (
     <React.Fragment>
       <StatusBar style="auto" />
-      <Tabs screenOptions={{ tabBarActiveTintColor: "teal", headerShown: false }}>
-        <Tabs.Screen
-          name="index"
-          options={{
-            tabBarIcon: () => <Feather name="home" size={24} color="black" />,
-          }}
-        />
-        <Tabs.Screen
-          name="Historial"
-          options={{
-            tabBarIcon: () => (
-              <AntDesign name="history" size={24} color="black" />
-            ),
-          }}
-        />
-        <Tabs.Screen
-          name="Ajustes"
-          options={{
-            tabBarIcon: () => (
-              <Feather name="settings" size={24} color="black" />
-            ),
-          }}
-        />
-        <Tabs.Screen
-          name="Perfil"
-          options={{
-            tabBarIcon: () => (
-              <FontAwesome5 name="user" size={24} color="black" />
-            ),
-          }}
-        />
-      </Tabs>
+      <Stack>
+        <Stack.Protected guard={isLoggedIn}>
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        </Stack.Protected>
+
+        <Stack.Protected guard={!isLoggedIn && !shouldCreateAccount}>
+          <Stack.Screen name="Sign-In" options={{ headerShown: true }} />
+        </Stack.Protected>
+
+        <Stack.Protected guard={shouldCreateAccount}>
+          <Stack.Screen name="CreateAccount" options={{ headerShown: true }} />
+        </Stack.Protected>
+      </Stack>
     </React.Fragment>
   );
-}
+};
+
+export default RootLayout;
+
+const styles = StyleSheet.create({});
