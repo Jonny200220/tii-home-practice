@@ -1,11 +1,20 @@
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import React from "react";
+import React, { useState } from "react";
 import { StyleSheet } from "react-native";
+import CreateAccount from "./CreateAccount";
 
 const RootLayout = () => {
-  const isLoggedIn = false;
-  const shouldCreateAccount = false;
+  const [isLoggedIn, setIsLoggedIn] = useState(true);
+  const [shouldCreateAccount, setShouldCreateAccount] = useState(false);
+
+  if (shouldCreateAccount) {
+    return <CreateAccount />;
+  }
+
+  if (isLoggedIn) {
+    return <Stack.Screen name="(tabs)" options={{ headerShown: false }} />;
+  }
 
   return (
     <React.Fragment>
