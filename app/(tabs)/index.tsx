@@ -6,6 +6,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
   useWindowDimensions,
 } from "react-native";
@@ -47,8 +48,16 @@ const categories: Category[] = [
   },
 ];
 
+const problemOptions = [
+  "Se rompió mi tubería.",
+  "Tengo una fuga de agua",
+  "Se rompió mi tubería.",
+];
+
 export default function Index() {
   const [modalVisible, setModalVisible] = useState(false);
+  const [selectedOption, setSelectedOption] = useState<number | null>(null);
+  const [customProblem, setCustomProblem] = useState("");
   const { width } = useWindowDimensions();
   const isSmall = width < 380;
 
@@ -59,36 +68,104 @@ export default function Index() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.headerRow}>
-          <View>
-            <Text style={styles.greeting}>Buenos días</Text>
-            <Pressable
-              style={styles.questionButton}
-              onPress={() => setModalVisible(true)}
-              accessibilityRole="button"
-            >
-              <Text style={styles.question}>¿Qué hay que arreglar hoy?</Text>
-            </Pressable>
-            <Modal
-              visible={modalVisible}
-              onRequestClose={() => {
-                setModalVisible(false);
-              }}
-            >
-              <View style={styles.questionButton}>
-                <Text style={styles.question}>Que problema Tienes?</Text>
+          <Text style={styles.greeting}>Buenos días</Text>
+          <Pressable
+            style={styles.questionButton}
+            onPress={() => setModalVisible(true)}
+            accessibilityRole="button"
+          >
+            <Text style={styles.question}>¿Qué hay que arreglar hoy?</Text>
+          </Pressable>
+          <Modal
+            visible={modalVisible}
+            onRequestClose={() => setModalVisible(false)}
+            animationType="slide"
+            transparent
+            // presentationStyle="pageSheet"
+          >
+            <SafeAreaView style={styles.modalContainer}>
+              {/* Header */}
+              <View style={styles.modalHeader}>
+                <View style={styles.modalHeaderIcon}>
+                  <Ionicons name="water" size={24} color="#fff" />
+                </View>
+                <View>
+                  <Text style={styles.modalHeaderTitle}>Plomería</Text>
+                  <Text style={styles.modalHeaderSubtitle}>
+                    Servicios de emergencia en el hogar
+                  </Text>
+                </View>
+              </View>
+
+              {/* Back link */}
+              <Pressable
+                onPress={() => setModalVisible(false)}
+                style={styles.backLink}
+              >
+                <Ionicons name="chevron-back" size={16} color="#64748b" />
+                <Text style={styles.backLinkText}>Regresar al inicio</Text>
+              </Pressable>
+
+              {/* Title */}
+              <Text style={styles.modalTitle}>¿Que problema tienes?</Text>
+              <Text style={styles.modalSubtitle}>
+                Nos ayudan a comprender el problema
+              </Text>
+
+              {/* Options */}
+              <View style={styles.optionsContainer}>
+                {problemOptions.map((option, index) => (
+                  <Pressable
+                    key={index}
+                    style={[
+                      styles.optionButton,
+                      selectedOption === index && styles.optionButtonSelected,
+                    ]}
+                    onPress={() => setSelectedOption(index)}
+                  >
+                    <Text
+                      style={[
+                        styles.optionText,
+                        selectedOption === index && styles.optionTextSelected,
+                      ]}
+                    >
+                      {option}
+                    </Text>
+                    <Ionicons
+                      name="chevron-forward"
+                      size={18}
+                      color="#94a3b8"
+                    />
+                  </Pressable>
+                ))}
+
+                {/* Custom input */}
+                <View style={styles.inputContainer}>
+                  <TextInput
+                    style={styles.textInput}
+                    placeholder="Describe el problema"
+                    placeholderTextColor="#64748b"
+                    value={customProblem}
+                    onChangeText={setCustomProblem}
+                  />
+                  <Ionicons name="chevron-forward" size={18} color="#94a3b8" />
+                </View>
+              </View>
+
+              {/* Buttons */}
+              <View style={styles.modalButtons}>
                 <Pressable
-                  onPress={() => {
-                    setModalVisible(false);
-                  }}
+                  style={styles.buttonSecondary}
+                  onPress={() => setModalVisible(false)}
                 >
-                  <Text>Cerrar</Text>
+                  <Text style={styles.buttonSecondaryText}>Atras</Text>
+                </Pressable>
+                <Pressable style={styles.buttonPrimary}>
+                  <Text style={styles.buttonPrimaryText}>Continuar</Text>
                 </Pressable>
               </View>
-            </Modal>
-          </View>
-          <Pressable style={styles.bellButton} accessibilityRole="button">
-            <Ionicons name="notifications-outline" size={24} color="#0f172a" />
-          </Pressable>
+            </SafeAreaView>
+          </Modal>
         </View>
 
         <View style={styles.grid}>
@@ -152,36 +229,156 @@ const styles = StyleSheet.create({
     paddingTop: 36,
   },
   headerRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
+    alignItems: "center",
     marginBottom: 28,
   },
   greeting: {
     fontSize: 16,
     fontWeight: "600",
     color: "#334155",
-    marginBottom: 8,
+    marginBottom: 4,
+    textAlign: "center",
   },
   question: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: "900",
-    fontFamily: "bold",
+    textAlign: "center",
+    color: "#0f172a",
   },
   questionButton: {
+    marginTop: 8,
     borderWidth: 2,
     borderColor: "#e2e8f0",
-    borderRadius: 12,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
+    borderRadius: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    backgroundColor: "#fff",
   },
-  bellButton: {
-    backgroundColor: "#e2e8f0",
-    height: 44,
+  // Modal styles
+  modalContainer: {
+    flex: 1,
+    backgroundColor: "#fff",
+    paddingHorizontal: 20,
+  },
+  modalHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f1f5f9",
+  },
+  modalHeaderIcon: {
     width: 44,
+    height: 44,
     borderRadius: 12,
+    backgroundColor: "#0f172a",
     alignItems: "center",
     justifyContent: "center",
+  },
+  modalHeaderTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#0f172a",
+  },
+  modalHeaderSubtitle: {
+    fontSize: 13,
+    color: "#64748b",
+  },
+  backLink: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 20,
+    marginBottom: 16,
+  },
+  backLinkText: {
+    fontSize: 14,
+    color: "#64748b",
+  },
+  modalTitle: {
+    fontSize: 26,
+    fontWeight: "900",
+    color: "#0f172a",
+    marginBottom: 4,
+  },
+  modalSubtitle: {
+    fontSize: 14,
+    color: "#64748b",
+    marginBottom: 24,
+  },
+  optionsContainer: {
+    gap: 12,
+  },
+  optionButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    backgroundColor: "#fff",
+  },
+  optionButtonSelected: {
+    borderColor: "#0f172a",
+    borderWidth: 2,
+    backgroundColor: "#f8fafc",
+  },
+  optionText: {
+    fontSize: 15,
+    color: "#334155",
+  },
+  optionTextSelected: {
+    fontWeight: "600",
+    color: "#0f172a",
+  },
+  inputContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    backgroundColor: "#fff",
+  },
+  textInput: {
+    flex: 1,
+    fontSize: 15,
+    color: "#0f172a",
+  },
+  modalButtons: {
+    flexDirection: "row",
+    gap: 12,
+    marginTop: "auto",
+    paddingVertical: 20,
+  },
+  buttonSecondary: {
+    flex: 1,
+    borderWidth: 2,
+    borderColor: "#0f172a",
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: "center",
+  },
+  buttonSecondaryText: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#0f172a",
+  },
+  buttonPrimary: {
+    flex: 1,
+    backgroundColor: "#0f172a",
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: "center",
+  },
+  buttonPrimaryText: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#fff",
   },
   grid: {
     flexDirection: "row",
