@@ -1,24 +1,18 @@
-import { Stack } from "expo-router";
+import { Redirect, Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React, { useState } from "react";
 import { StyleSheet } from "react-native";
-import CreateAccount from "./CreateAccount";
 
 const RootLayout = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(true);
   const [shouldCreateAccount, setShouldCreateAccount] = useState(false);
 
-  if (shouldCreateAccount) {
-    return <CreateAccount />;
-  }
-
-  if (isLoggedIn) {
-    return <Stack.Screen name="(tabs)" options={{ headerShown: false }} />;
-  }
-
   return (
     <React.Fragment>
       <StatusBar style="auto" />
+      {/* {shouldCreateAccount && <Redirect href="/CreateAccount" />}
+      {!shouldCreateAccount && isLoggedIn && <Redirect href="/(tabs)" />}
+      {!shouldCreateAccount && !isLoggedIn && <Redirect href="/Sign-In" />} */}
       <Stack>
         <Stack.Protected guard={isLoggedIn}>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />

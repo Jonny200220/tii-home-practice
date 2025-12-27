@@ -1,6 +1,7 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
-import React from "react";
+import React, { useState } from "react";
 import {
+  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -47,6 +48,7 @@ const categories: Category[] = [
 ];
 
 export default function Index() {
+  const [modalVisible, setModalVisible] = useState(false);
   const { width } = useWindowDimensions();
   const isSmall = width < 380;
 
@@ -59,7 +61,30 @@ export default function Index() {
         <View style={styles.headerRow}>
           <View>
             <Text style={styles.greeting}>Buenos días</Text>
-            <Text style={styles.question}>¿Qué hay que arreglar hoy?</Text>
+            <Pressable
+              style={styles.questionButton}
+              onPress={() => setModalVisible(true)}
+              accessibilityRole="button"
+            >
+              <Text style={styles.question}>¿Qué hay que arreglar hoy?</Text>
+            </Pressable>
+            <Modal
+              visible={modalVisible}
+              onRequestClose={() => {
+                setModalVisible(false);
+              }}
+            >
+              <View style={styles.questionButton}>
+                <Text style={styles.question}>Que problema Tienes?</Text>
+                <Pressable
+                  onPress={() => {
+                    setModalVisible(false);
+                  }}
+                >
+                  <Text>Cerrar</Text>
+                </Pressable>
+              </View>
+            </Modal>
           </View>
           <Pressable style={styles.bellButton} accessibilityRole="button">
             <Ionicons name="notifications-outline" size={24} color="#0f172a" />
@@ -142,6 +167,8 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "900",
     fontFamily: "bold",
+  },
+  questionButton: {
     borderWidth: 2,
     borderColor: "#e2e8f0",
     borderRadius: 12,
