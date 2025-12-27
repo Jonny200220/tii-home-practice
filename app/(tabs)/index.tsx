@@ -1,4 +1,5 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
+import { StatusBar } from "expo-status-bar";
 import React, { useState } from "react";
 import {
   Modal,
@@ -63,6 +64,7 @@ export default function Index() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      <StatusBar style="dark"/>
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
