@@ -1,443 +1,229 @@
-import Ionicons from "@expo/vector-icons/Ionicons";
-import { StatusBar } from "expo-status-bar";
-import React, { useState } from "react";
-import {
-  Modal,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-  useWindowDimensions,
-} from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { Ionicons } from '@expo/vector-icons';
+import React, { useState } from 'react';
+import { SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ServiceCard } from '../../components/ServiceCard';
+import { StatsCard } from '../../components/StatsCard';
+import { ServiceItem, StatItem } from '../../types/interfaces';
+import { useRouter } from 'expo-router';
 
-type Category = {
-  label: string;
-  subtitle?: string;
-  icon: keyof typeof Ionicons.glyphMap;
-  highlight?: boolean;
-  wide?: boolean;
-};
-
-const categories: Category[] = [
-  {
-    label: "Plomería",
-    subtitle: "Reparaciones de agua",
-    icon: "water-outline",
-    highlight: true,
+// --- DATOS FALSOS (MOCK DATA) ---
+// Esto es lo que tu equipo de backend te enviará después.
+// Por ahora lo simulamos aquí.
+const fakeServicesData: ServiceItem[] = [
+  { 
+    id: '1', 
+    title: 'Plomería', 
+    subtitle: 'Fugas, Tuberías', 
+    iconName: 'water-outline', 
+    color: '#3498DB',       
+    backgroundColor: '#EBF5FB' 
   },
-  {
-    label: "Electricista",
-    subtitle: "Problemas de luz",
-    icon: "flash-outline",
+  { 
+    id: '2', 
+    title: 'Electricista', 
+    subtitle: 'Cortos, Instalación', 
+    iconName: 'flash-outline', 
+    color: '#F39C12',       
+    backgroundColor: '#FEF5E7' 
   },
-  { label: "Cerrajería", subtitle: "Apertura de puertas", icon: "key-outline" },
-  {
-    label: "Electrodomésticos",
-    subtitle: "Arreglos del hogar",
-    icon: "cube-outline",
+  { 
+    id: '3', 
+    title: 'Cerrajería', 
+    subtitle: 'Apertura de chapas', 
+    iconName: 'key-outline', 
+    color: '#7F8C8D',       
+    backgroundColor: '#F2F4F4' 
   },
-  { label: "Empresas", subtitle: "?", icon: "help-circle-outline" },
-  { label: "Proveedores", subtitle: "?", icon: "help-circle-outline" },
-  {
-    label: "Profesionales verificados",
-    subtitle: "2,400+",
-    icon: "shield-checkmark-outline",
-    wide: true,
+  { 
+    id: '4', 
+    title: 'Electrodomésticos', 
+    subtitle: 'Reparación general', 
+    iconName: 'construct-outline', 
+    color: '#27AE60',      
+    backgroundColor: '#E9F7EF' 
   },
 ];
 
-const problemOptions = [
-  "Se rompió mi tubería.",
-  "Tengo una fuga de agua",
-  "Se rompió mi tubería.",
+const fakeStatsData: StatItem[] = [
+    { 
+      title: 'Tiempo Resp.', // Abreviación de Tiempo de Respuesta
+      value: '8 min', 
+      iconName: 'time-outline', 
+      iconColor: '#FF5A5F' 
+    },
+    { 
+      title: 'Verificados', 
+      value: '2,400+', 
+      iconName: 'shield-checkmark-outline', 
+      iconColor: '#27AE60' 
+    },
 ];
 
-export default function Index() {
-  const [modalVisible, setModalVisible] = useState(false);
-  const [selectedOption, setSelectedOption] = useState<number | null>(null);
-  const [customProblem, setCustomProblem] = useState("");
-  const { width } = useWindowDimensions();
-  const isSmall = width < 380;
+
+export default function HomeScreen() {
+  const router = useRouter();
+  // Estado para saber cuál servicio está seleccionado (simulando el click)
+  const [selectedServiceId, setSelectedServiceId] = useState<string | null>('1'); // Empezamos con Plumbing seleccionado
+
+  // --- HEADER PERSONALIZADO ---
+  const CustomHeader = () => (
+    <View style={headerStyles.container}>
+        <TouchableOpacity>
+             <Ionicons name="menu-outline" size={28} color="#333" />
+        </TouchableOpacity>
+        
+        <View style={headerStyles.rightSide}>
+            <TouchableOpacity style={headerStyles.notificationContainer}>
+                 <Ionicons name="notifications-outline" size={26} color="#333" />
+                 {/* El puntito rojo de notificación */}
+                 <View style={headerStyles.badge} />
+            </TouchableOpacity>
+            
+            {/* Avatar con iniciales */}
+            <View style={headerStyles.avatar}>
+                <Text style={headerStyles.avatarText}>JD</Text>
+            </View>
+        </View>
+    </View>
+  );
+
 
   return (
+    // SafeAreaView asegura que no choquemos con la barra de estado del celular
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar style="dark"/>
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={styles.headerRow}>
-          <Text style={styles.greeting}>Buenos días</Text>
-          <Pressable
-            style={styles.questionButton}
-            onPress={() => setModalVisible(true)}
-            accessibilityRole="button"
-          >
-            <Text style={styles.question}>¿Qué hay que arreglar hoy?</Text>
-          </Pressable>
-          <Modal
-            visible={modalVisible}
-            onRequestClose={() => setModalVisible(false)}
-            animationType="slide"
-            transparent
-            // presentationStyle="pageSheet"
-          >
-            <SafeAreaView style={styles.modalContainer}>
-              {/* Header */}
-              <View style={styles.modalHeader}>
-                <View style={styles.modalHeaderIcon}>
-                  <Ionicons name="water" size={24} color="#fff" />
-                </View>
-                <View>
-                  <Text style={styles.modalHeaderTitle}>Plomería</Text>
-                  <Text style={styles.modalHeaderSubtitle}>
-                    Servicios de emergencia en el hogar
-                  </Text>
-                </View>
-              </View>
+      <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
+        
+        {/* 1. Insertamos el Header */}
+        <CustomHeader />
 
-              {/* Back link */}
-              <Pressable
-                onPress={() => setModalVisible(false)}
-                style={styles.backLink}
-              >
-                <Ionicons name="chevron-back" size={16} color="#64748b" />
-                <Text style={styles.backLinkText}>Regresar al inicio</Text>
-              </Pressable>
+        {/* 2. Sección de Saludo */}
+        <View style={styles.greetingSection}>
+            <Text style={styles.greetingSub}>Buenos días,</Text>
+            <Text style={styles.greetingTitle}>¿Qué hay que arreglar?</Text>
+        </View>
 
-              {/* Title */}
-              <Text style={styles.modalTitle}>¿Que problema tienes?</Text>
-              <Text style={styles.modalSubtitle}>
-                Nos ayudan a comprender el problema
-              </Text>
-
-              {/* Options */}
-              <View style={styles.optionsContainer}>
-                {problemOptions.map((option, index) => (
-                  <Pressable
+        {/* 3. Sección de Estadísticas (Stats) */}
+        <View style={styles.statsContainer}>
+            {fakeStatsData.map((stat, index) => (
+                <StatsCard 
                     key={index}
-                    style={[
-                      styles.optionButton,
-                      selectedOption === index && styles.optionButtonSelected,
-                    ]}
-                    onPress={() => setSelectedOption(index)}
-                  >
-                    <Text
-                      style={[
-                        styles.optionText,
-                        selectedOption === index && styles.optionTextSelected,
-                      ]}
-                    >
-                      {option}
-                    </Text>
-                    <Ionicons
-                      name="chevron-forward"
-                      size={18}
-                      color="#94a3b8"
-                    />
-                  </Pressable>
-                ))}
-
-                {/* Custom input */}
-                <View style={styles.inputContainer}>
-                  <TextInput
-                    style={styles.textInput}
-                    placeholder="Describe el problema"
-                    placeholderTextColor="#64748b"
-                    value={customProblem}
-                    onChangeText={setCustomProblem}
-                  />
-                  <Ionicons name="chevron-forward" size={18} color="#94a3b8" />
-                </View>
-              </View>
-
-              {/* Buttons */}
-              <View style={styles.modalButtons}>
-                <Pressable
-                  style={styles.buttonSecondary}
-                  onPress={() => setModalVisible(false)}
-                >
-                  <Text style={styles.buttonSecondaryText}>Atras</Text>
-                </Pressable>
-                <Pressable style={styles.buttonPrimary}>
-                  <Text style={styles.buttonPrimaryText}>Continuar</Text>
-                </Pressable>
-              </View>
-            </SafeAreaView>
-          </Modal>
-        </View>
-
-        <View style={styles.grid}>
-          {categories.map((item) => (
-            <Pressable
-              key={item.label}
-              style={[
-                styles.card,
-                { width: item.wide ? "100%" : isSmall ? "100%" : "48%" },
-                item.highlight && styles.cardHighlight,
-                item.wide && styles.cardWide,
-              ]}
-              accessibilityRole="button"
-            >
-              <View
-                style={[
-                  styles.iconWrapper,
-                  item.highlight && styles.iconWrapperHighlight,
-                ]}
-              >
-                <Ionicons
-                  name={item.icon}
-                  size={22}
-                  color={item.highlight ? "#0f172a" : "#334155"}
+                    title={stat.title}
+                    value={stat.value}
+                    iconName={stat.iconName}
+                    iconColor={stat.iconColor}
                 />
-              </View>
-              <Text
-                style={[
-                  styles.cardTitle,
-                  item.highlight && styles.cardTitleHighlight,
-                ]}
-              >
-                {item.label}
-              </Text>
-              {item.subtitle ? (
-                <Text
-                  style={[
-                    styles.cardSubtitle,
-                    item.highlight && styles.cardSubtitleHighlight,
-                  ]}
-                >
-                  {item.subtitle}
-                </Text>
-              ) : null}
-            </Pressable>
-          ))}
+            ))}
         </View>
+
+        <View style={styles.gridContainer}>
+            {fakeServicesData.map((service) => (
+            <ServiceCard
+                key={service.id}
+                title={service.title}
+                subtitle={service.subtitle}
+                iconName={service.iconName}
+                color={service.color}
+                backgroundColor={service.backgroundColor}
+                isActive={service.id === selectedServiceId}
+                // --- AQUÍ ESTÁ EL CAMBIO ---
+                onPress={() => {
+                    // 1. Marcamos visualmente la tarjeta
+                    setSelectedServiceId(service.id);
+                    
+                    // 2. Navegamos enviando los datos a la nueva pantalla
+                    router.push({
+                        pathname: "/service/[id]",
+                        params: { 
+                            id: service.id, 
+                            title: service.title, 
+                            color: service.color, 
+                            backgroundColor: service.backgroundColor 
+                        }
+                    });
+                }}
+            />
+            ))}
+        </View>
+
       </ScrollView>
     </SafeAreaView>
   );
 }
 
+// --- ESTILOS PRINCIPALES ---
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#f8fafc",
+    backgroundColor: '#F8F9FB', // Color de fondo gris claro de la Imagen 2
   },
-  scrollContent: {
-    paddingHorizontal: 20,
-    paddingBottom: 24,
-    paddingTop: 36,
-  },
-  headerRow: {
-    alignItems: "center",
-    marginBottom: 28,
-  },
-  greeting: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#334155",
-    marginBottom: 4,
-    textAlign: "center",
-  },
-  question: {
-    fontSize: 20,
-    fontWeight: "900",
-    textAlign: "center",
-    color: "#0f172a",
-  },
-  questionButton: {
-    marginTop: 8,
-    borderWidth: 2,
-    borderColor: "#e2e8f0",
-    borderRadius: 14,
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    backgroundColor: "#fff",
-  },
-  // Modal styles
-  modalContainer: {
+  container: {
     flex: 1,
-    backgroundColor: "#fff",
-    paddingHorizontal: 20,
   },
-  modalHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#f1f5f9",
+  contentContainer: {
+      padding: 20,
   },
-  modalHeaderIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    backgroundColor: "#0f172a",
-    alignItems: "center",
-    justifyContent: "center",
+  greetingSection: {
+      marginTop: 20,
+      marginBottom: 25,
   },
-  modalHeaderTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#0f172a",
+  greetingSub: {
+      fontSize: 16,
+      color: '#A0A0A0',
+      marginBottom: 5,
   },
-  modalHeaderSubtitle: {
-    fontSize: 13,
-    color: "#64748b",
+  greetingTitle: {
+      fontSize: 28,
+      fontWeight: '800',
+      color: '#1A1A1A',
   },
-  backLink: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 20,
-    marginBottom: 16,
+  statsContainer: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      marginBottom: 25,
   },
-  backLinkText: {
-    fontSize: 14,
-    color: "#64748b",
+  gridContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap', // Permite que los elementos bajen a la siguiente línea
+    justifyContent: 'space-between', // Espacio uniforme entre columnas
   },
-  modalTitle: {
-    fontSize: 26,
-    fontWeight: "900",
-    color: "#0f172a",
-    marginBottom: 4,
-  },
-  modalSubtitle: {
-    fontSize: 14,
-    color: "#64748b",
-    marginBottom: 24,
-  },
-  optionsContainer: {
-    gap: 12,
-  },
-  optionButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    borderWidth: 1,
-    borderColor: "#e2e8f0",
-    borderRadius: 12,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    backgroundColor: "#fff",
-  },
-  optionButtonSelected: {
-    borderColor: "#0f172a",
-    borderWidth: 2,
-    backgroundColor: "#f8fafc",
-  },
-  optionText: {
-    fontSize: 15,
-    color: "#334155",
-  },
-  optionTextSelected: {
-    fontWeight: "600",
-    color: "#0f172a",
-  },
-  inputContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    borderWidth: 1,
-    borderColor: "#e2e8f0",
-    borderRadius: 12,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    backgroundColor: "#fff",
-  },
-  textInput: {
-    flex: 1,
-    fontSize: 15,
-    color: "#0f172a",
-  },
-  modalButtons: {
-    flexDirection: "row",
-    gap: 12,
-    marginTop: "auto",
-    paddingVertical: 20,
-  },
-  buttonSecondary: {
-    flex: 1,
-    borderWidth: 2,
-    borderColor: "#0f172a",
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: "center",
-  },
-  buttonSecondaryText: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#0f172a",
-  },
-  buttonPrimary: {
-    flex: 1,
-    backgroundColor: "#0f172a",
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: "center",
-  },
-  buttonPrimaryText: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#fff",
-  },
-  grid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
-  },
-  card: {
-    width: "48%",
-    backgroundColor: "#fff",
-    borderRadius: 14,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: "#e2e8f0",
-    marginBottom: 12,
-    shadowColor: "#0f172a",
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 2,
-  },
-  cardWide: {
-    width: "100%",
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-  },
-  cardHighlight: {
-    borderColor: "#0f172a",
-    backgroundColor: "#f8fafc",
-  },
-  iconWrapper: {
-    height: 44,
-    width: 44,
-    borderRadius: 14,
-    backgroundColor: "#f1f5f9",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 12,
-  },
-  iconWrapperHighlight: {
-    backgroundColor: "#e2e8f0",
-  },
-  cardTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#0f172a",
-    marginBottom: 4,
-  },
-  cardTitleHighlight: {
-    color: "#0f172a",
-  },
-  cardSubtitle: {
-    fontSize: 13,
-    color: "#64748b",
-  },
-  cardSubtitleHighlight: {
-    color: "#0f172a",
-    fontWeight: "600",
-  },
+});
+
+// --- ESTILOS DEL HEADER ---
+const headerStyles = StyleSheet.create({
+    container: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginTop: 10, // Un poco de espacio arriba
+    },
+    rightSide: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    notificationContainer: {
+        marginRight: 15,
+        position: 'relative',
+    },
+    badge: {
+        position: 'absolute',
+        top: 2,
+        right: 3,
+        width: 8,
+        height: 8,
+        backgroundColor: '#FF5A5F',
+        borderRadius: 4,
+    },
+    avatar: {
+        width: 40,
+        height: 40,
+        backgroundColor: '#FF7F50', // Color naranja del diseño
+        borderRadius: 20,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    avatarText: {
+        color: 'white',
+        fontWeight: 'bold',
+        fontSize: 16,
+    }
 });
