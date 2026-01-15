@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView, Alert, TextInput, KeyboardAvoidingView, Platform } from 'react-native';import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
+import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView, Alert, TextInput, KeyboardAvoidingView, Platform, Image } from 'react-native';
+import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-
+import * as ImagePicker from 'expo-image-picker';
 
 export default function ServiceDetailScreen() {
   const router = useRouter();
@@ -11,6 +12,15 @@ const { title, color } = useLocalSearchParams();
   const [currentStep, setCurrentStep] = useState(1); // Controlamos en qué paso estamos (1 o 2)
   const [selectedOption, setSelectedOption] = useState<number | null>(0);
   const [customDescription, setCustomDescription] = useState('');
+  const [imageUri, setImageUri] = useState<string | null>(null);
+  const [urgency, setUrgency] = useState<number | null>(null);
+
+  // Datos para los botones de urgencia
+  const urgencyOptions = [
+    { title: "Emergencia lo antes posible", subtitle: "Necesito ayuda ahora mismo", icon: "warning-outline" },
+    { title: "Dentro de 2 horas", subtitle: "Puedo esperar un poco", icon: "time-outline" },
+    { title: "Programar visita", subtitle: "Seleccionar fecha y hora", icon: "calendar-outline" },
+  ];
 
   // Datos de las opciones (Paso 1)
   const options = [
@@ -21,21 +31,53 @@ const { title, color } = useLocalSearchParams();
     
   ];
 
-  // --- LÓGICA DE NAVEGACIÓN ENTRE PASOS ---
+
+// --- FUNCIÓN PARA SELECCIONAR IMAGEN ---
+  const pickImage = async () => {
+    // No necesitamos pedir permisos explícitos para la galería en versiones modernas
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images, // Solo imágenes
+      allowsEditing: true, // Permitir recortar (opcional)
+      aspect: [4, 3], // Proporción (opcional)
+      quality: 1, // Calidad máxima
+    });
+
+if (!result.canceled) {
+      // Si el usuario no canceló, guardamos la ruta de la imagen
+      setImageUri(result.assets[0].uri);
+      // Opcional: Si quieres que avance automáticamente al seleccionar, descomenta esto:
+      // handleContinue(); 
+    }
+  };
+
+ // --- LÓGICA DE NAVEGACIÓN ---
   const handleContinue = () => {
+    // Paso 1 -> 2 (De Problema a Foto)
     if (currentStep === 1) {
-      setCurrentStep(2); // Avanzar al paso de la foto
-    } else {
-      // Aquí iría la lógica final o siguiente paso
-      Alert.alert("Proceso", "Aquí iríamos al paso 3 o finalizaríamos");
+      setCurrentStep(2); 
+    } 
+    // Paso 2 -> 3 (De Foto a Urgencia)
+    else if (currentStep === 2) {
+      setCurrentStep(3); 
+    } 
+    // Paso 3 -> 4 (De Urgencia a Buscando...)
+    else if (currentStep === 3) {
+      setCurrentStep(4); 
+
+      // Simulamos espera de 3 segundos
+      setTimeout(() => {
+        setCurrentStep(5); // Cambiamos directo a la pantalla de Heroe 
+      }, 3000);
     }
   };
 
   const handleBack = () => {
-    if (currentStep === 2) {
-      setCurrentStep(1); // Volver al paso del problema
+    if (currentStep === 3) {
+      setCurrentStep(2); // De Urgencia volver a Foto (NUEVO)
+    } else if (currentStep === 2) {
+      setCurrentStep(1); // De Foto volver a Problema
     } else {
-      router.back(); // Si estamos en el paso 1, volvemos al Home
+      router.back(); // Salir
     }
   };
 
@@ -90,8 +132,7 @@ const { title, color } = useLocalSearchParams();
           </View>
         </>
       );
-    } 
-    else if (currentStep === 2) {
+    } else if (currentStep === 2) {
       // --- PASO 2: FOTO DEL PROBLEMA ---
       return (
         <>
@@ -100,13 +141,182 @@ const { title, color } = useLocalSearchParams();
 
           <Text style={styles.label}>Añadir una foto (opcional)</Text>
           
-          <TouchableOpacity style={styles.uploadBox} onPress={() => Alert.alert("Cámara", "Aquí abriremos la cámara")}>
-              <Ionicons name="camera-outline" size={40} color="#666" style={{ marginBottom: 10 }} />
-              <Text style={styles.uploadText}>Toque para añadir foto</Text>
-          </TouchableOpacity>
+          {/* LÓGICA CONDICIONAL */}
+          {!imageUri ? (
+            // A) Si NO hay foto, mostramos el botón de subir
+            <TouchableOpacity style={styles.uploadBox} onPress={pickImage}>
+                <Ionicons name="camera-outline" size={40} color="#666" style={{ marginBottom: 10 }} />
+                <Text style={styles.uploadText}>Toque para añadir foto</Text>
+            </TouchableOpacity>
+          ) : (
+            // B) Si SÍ hay foto, mostramos la previsualización
+            <View style={styles.imagePreviewContainer}>
+                <Image source={{ uri: imageUri }} style={styles.imagePreview} />
+                {/* Botón para eliminar la foto */}
+                <TouchableOpacity style={styles.removeImageButton} onPress={() => setImageUri(null)}>
+                    <Ionicons name="close" size={20} color="white" />
+                </TouchableOpacity>
+            </View>
+          )}
         </>
       );
     }
+    
+    else if (currentStep === 3) {
+      // --- PASO 3: URGENCIA
+      return (
+        <>
+          <Text style={styles.questionTitle}>¿Qué tan urgente es esto?</Text>
+          <Text style={styles.questionSubtitle}>Priorizaremos tu solicitud según esto</Text>
+
+          <View style={styles.optionsContainer}>
+            {urgencyOptions.map((item, index) => {
+              const isSelected = urgency === index;
+              return (
+                <TouchableOpacity
+                  key={index}
+                  style={[
+                    styles.urgencyCard,
+                    isSelected ? styles.urgencySelected : styles.urgencyUnselected
+                  ]}
+                  onPress={() => setUrgency(index)}
+                >
+                  <View style={styles.urgencyContent}>
+                    <Ionicons 
+                      name={item.icon as any} 
+                      size={24} 
+                      color={isSelected ? "white" : "#1A1A1A"} 
+                      style={{ marginRight: 15 }}
+                    />
+                    <View>
+                      <Text style={[styles.urgencyTitle, isSelected ? styles.textSelected : styles.textUnselected]}>
+                        {item.title}
+                      </Text>
+                      <Text style={[styles.urgencySubtitle, isSelected ? {color: '#CCC'} : {color: '#666'}]}>
+                        {item.subtitle}
+                      </Text>
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </>
+      );
+    
+    } else if (currentStep === 4) {
+      // --- PASO 4: BUSCANDO (Loading) ---
+      return (
+        <View style={styles.searchingContainer}>
+          {/* Círculo con Icono */}
+          <View style={styles.pulseCircle}>
+             <Ionicons name="paper-plane-outline" size={40} color="#1A1A1A" style={{ marginLeft: -2, marginTop: 2 }} />
+          </View>
+
+          <Text style={styles.searchingTitle}>Buscando tu asesor...</Text>
+          <Text style={styles.searchingSubtitle}>
+            Conectándote con el mejor {title?.toString().toLowerCase() || "profesional"} cercano
+          </Text>
+
+          {/* Animación de puntitos (Simulada visualmente) */}
+          <View style={{ flexDirection: 'row', marginTop: 20 }}>
+             <View style={[styles.dot, { opacity: 1 }]} />
+             <View style={[styles.dot, { opacity: 0.6 }]} />
+             <View style={[styles.dot, { opacity: 0.3 }]} />
+          </View>
+        </View>
+      );
+    } else if (currentStep === 5) {
+      // --- PASO 5: HÉROE ASIGNADO ---
+      return (
+        <View style={styles.heroContainer}>
+            
+            {/* Encabezado con Check y Cerrar */}
+            <View style={styles.heroHeader}>
+                <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                    <Ionicons name="checkmark-circle" size={24} color="#1A1A1A" />
+                    <Text style={styles.heroTitle}>¡Héroe asignado!</Text>
+                </View>
+                {/* La X cierra todo y manda al inicio */}
+                <TouchableOpacity onPress={() => router.push("/")}>
+                    <Ionicons name="close" size={24} color="#1A1A1A" />
+                </TouchableOpacity>
+            </View>
+
+            {/* Foto del Técnico */}
+            <View style={styles.avatarContainer}>
+                {/* Usamos una imagen de muestra de internet */}
+                <Image 
+                    source={{ uri: 'https://randomuser.me/api/portraits/men/32.jpg' }} 
+                    style={styles.heroAvatar} 
+                />
+            </View>
+
+            {/* Datos del Técnico */}
+            <Text style={styles.heroName}>Eliot Alderson</Text>
+            <Text style={styles.heroRole}>Plomero maestro</Text>
+
+            {/* Badge de Verificado */}
+            <View style={styles.verifiedBadge}>
+                <Ionicons name="shield-checkmark" size={12} color="white" style={{marginRight:4}} />
+                <Text style={styles.verifiedText}>Profesional Verificado</Text>
+            </View>
+
+            {/* Rating y Llegada */}
+            <View style={styles.statsRow}>
+                <View style={styles.statItem}>
+                    <Ionicons name="star" size={16} color="#1A1A1A" />
+                    <Text style={styles.statText}>4.9 <Text style={{color:'#999', fontWeight:'400'}}>(847)</Text></Text>
+                </View>
+                <View style={styles.statItem}>
+                    <Ionicons name="time-outline" size={16} color="#1A1A1A" />
+                    <Text style={styles.statText}>8 min</Text>
+                </View>
+                 <View style={styles.statItem}>
+                    <Ionicons name="location-outline" size={16} color="#1A1A1A" />
+                    <Text style={styles.statText}>1.2 km</Text>
+                </View>
+            </View>
+
+            {/* Galería de trabajos recientes */}
+            <View style={styles.recentWorkContainer}>
+                <Text style={styles.sectionLabel}>Recientes trabajos</Text>
+                <View style={styles.workImagesRow}>
+                    <Image source={{ uri: 'https://picsum.photos/100' }} style={styles.workImage} />
+                    <Image source={{ uri: 'https://picsum.photos/101' }} style={styles.workImage} />
+                    <Image source={{ uri: 'https://picsum.photos/102' }} style={styles.workImage} />
+                </View>
+            </View>
+
+            {/* Botones de Acción */}
+            <View style={styles.actionButtonsRow}>
+                <TouchableOpacity style={styles.btnOutline}>
+                    <Ionicons name="chatbubble-outline" size={18} color="#1A1A1A" style={{marginRight: 8}}/>
+                    <Text style={styles.btnTextOutline}>Mensaje</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.btnSolid}>
+                    <Ionicons name="call-outline" size={18} color="white" style={{marginRight: 8}}/>
+                    <Text style={styles.btnTextSolid}>Llamar</Text>
+                </TouchableOpacity>
+            </View>
+
+            {/* Resumen Final del Servicio */}
+            <View style={styles.serviceSummary}>
+                <View>
+                    <Text style={styles.summaryLabel}>Servicio</Text>
+                    <Text style={styles.summaryValue}>{title} - {options[selectedOption!]}</Text>
+                </View>
+                <View style={styles.summaryBadge}>
+                     <Text style={styles.summaryBadgeText}>Emergencia</Text>
+                </View>
+            </View>
+
+        </View>
+      );
+    }
+
+
+    
   };
 
   return (
@@ -154,15 +364,20 @@ const { title, color } = useLocalSearchParams();
                 </View>
 
                 {/* Footer de Botones */}
-                <View style={styles.footer}>
-                    <TouchableOpacity style={styles.btnSecondary} onPress={handleBack}>
-                        <Text style={styles.btnTextSecondary}>Atras</Text>
-                    </TouchableOpacity>
-                    
-                    <TouchableOpacity style={styles.btnPrimary} onPress={handleContinue}>
-                        <Text style={styles.btnTextPrimary}>Continuar</Text>
-                    </TouchableOpacity>
-                </View>
+                {/* AGREGAMOS ESTA CONDICIÓN: Si estamos en el paso 4, ocultamos los botones */}
+                {currentStep < 4 && (
+                    <View style={styles.footer}>
+                        <TouchableOpacity style={styles.btnSecondary} onPress={handleBack}>
+                            <Text style={styles.btnTextSecondary}>Atras</Text>
+                        </TouchableOpacity>
+                        
+                        <TouchableOpacity style={styles.btnPrimary} onPress={handleContinue}>
+                            <Text style={styles.btnTextPrimary}>
+                                {currentStep === 3 ? "Encontrar Pro" : "Continuar"}
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
+                )}
 
             </View>
           </ScrollView>
@@ -368,4 +583,253 @@ textAreaContainer: {
     color: '#333',
   },
     
+// Estilos para la previsualización de la imagen
+  imagePreviewContainer: {
+    height: 200,
+    borderRadius: 12,
+    overflow: 'hidden', // Para que la imagen respete el borde redondeado
+    marginBottom: 20,
+    position: 'relative', // Para poder posicionar el botón de borrar encima
+  },
+  imagePreview: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  removeImageButton: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    backgroundColor: 'rgba(0,0,0,0.6)', // Fondo semitransparente negro
+    borderRadius: 15,
+    width: 30,
+    height: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+ },
+
+// Estilos Paso 3 (Urgencia)
+  urgencyCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 20,
+    borderRadius: 16,
+    marginBottom: 15,
+    borderWidth: 1,
+  },
+  urgencyUnselected: {
+    backgroundColor: 'white',
+    borderColor: '#E0E0E0',
+  },
+  urgencySelected: {
+    backgroundColor: '#1A1A1A', // Fondo negro al seleccionar
+    borderColor: '#1A1A1A',
+  },
+  urgencyContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  urgencyTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  urgencySubtitle: {
+    fontSize: 12,
+
+  },
+// Estilos Paso 4 (Buscando)
+  searchingContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 40,
+  },
+  pulseCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#F0F0F0', // Gris muy clarito
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 25,
+  },
+  searchingTitle: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#1A1A1A',
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  searchingSubtitle: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    paddingHorizontal: 20,
+    lineHeight: 20,
+  },
+  // Estilos para los 3 puntitos
+  dot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#1A1A1A',
+    marginHorizontal: 4,
+  },
+
+  // Estilos Paso 5 (Héroe Asignado)
+  heroContainer: {
+    paddingTop: 10,
+  },
+  heroHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  heroTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+    marginLeft: 8,
+    color: '#1A1A1A',
+  },
+  avatarContainer: {
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  heroAvatar: {
+    width: 100,
+    height: 100,
+    borderRadius: 50, // Círculo perfecto
+  },
+  heroName: {
+    fontSize: 22,
+    fontWeight: '800',
+    textAlign: 'center',
+    color: '#1A1A1A',
+  },
+  heroRole: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  verifiedBadge: {
+    flexDirection: 'row',
+    backgroundColor: '#1A1A1A',
+    paddingVertical: 4,
+    paddingHorizontal: 12,
+    borderRadius: 20,
+    alignSelf: 'center',
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+  verifiedText: {
+    color: 'white',
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  statsRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 20, // Espacio entre elementos
+    marginBottom: 25,
+  },
+  statItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
+  statText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#1A1A1A',
+  },
+  // Galería
+  recentWorkContainer: {
+    backgroundColor: '#FAFAFA',
+    padding: 15,
+    borderRadius: 16,
+    marginBottom: 20,
+  },
+  sectionLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 10,
+    color: '#666',
+    textAlign: 'center',
+  },
+  workImagesRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+  },
+  workImage: {
+    width: 70,
+    height: 70,
+    borderRadius: 12,
+  },
+  // Botones
+  actionButtonsRow: {
+    flexDirection: 'row',
+    gap: 15,
+    marginBottom: 25,
+  },
+  btnOutline: {
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderRadius: 30,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+  },
+  btnSolid: {
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderRadius: 30,
+    backgroundColor: '#1A1A1A',
+  },
+  btnTextOutline: {
+    fontWeight: '600',
+    color: '#1A1A1A',
+  },
+  btnTextSolid: {
+    fontWeight: '600',
+    color: 'white',
+  },
+  // Resumen footer
+  serviceSummary: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#F5F5F5',
+    padding: 15,
+    borderRadius: 16,
+  },
+  summaryLabel: {
+    fontSize: 10,
+    color: '#888',
+    textTransform: 'uppercase',
+    fontWeight: '700',
+  },
+  summaryValue: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#1A1A1A',
+    maxWidth: 200,
+  },
+  summaryBadge: {
+    backgroundColor: '#E0E0E0',
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 8,
+  },
+  summaryBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#666',
+  },
 });
